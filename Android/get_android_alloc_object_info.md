@@ -4,7 +4,7 @@ Slug: get_android_alloc_object_info
 
 最近一直在做有关内存方面的优化工作，在做优化的过程，除了关注内存的申请量以及GC的情况之外，我们经常需要想方法找出是那些对象占用了大量内存，以及他们是如何导致GC的，这意味着我们需要获取对象申请的信息（大小，类型，堆栈等），我们这篇文章来介绍下几种获取对象申请信息的方法
 
-###Allocation Trakcer
+###Allocation Tracker
 
 Allocation Tracker是android studio自带的一个功能，我们可以在MemoryMonitor中打开使用：
 

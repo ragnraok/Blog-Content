@@ -79,10 +79,10 @@ MediaCodec是API 16之后Google推出的用于音视频编解码的一套偏底�
 	MediaCodec在初始化的时候，在``configure``的时候，需要传入一个MediaFormat对象，当作为编码器使用的时候，我们一般需要在MediaFormat中指定视频的宽高，帧率，码率，I帧间隔等基本信息，除此之外，还有一个重要的信息就是，指定编码器接受的YUV帧的颜色格式。这个是因为由于YUV根据其采样比例，UV分量的排列顺序有很多种不同的颜色格式，而对于Android的摄像头在``onPreviewFrame``输出的YUV帧格式，如果没有配置任何参数的情况下，基本上都是NV21格式，但Google对MediaCodec的API在设计和规范的时候，显得很不厚道，过于贴近Android的HAL层了，导致了NV21格式并不是所有机器的MediaCodec都支持这种格式作为编码器的输入格式！
 	因此，在初始化MediaCodec的时候，我们需要通过``codecInfo.getCapabilitiesForType``来查询机器上的MediaCodec实现具体支持哪些YUV格式作为输入格式，一般来说，起码在4.4+的系统上，这两种格式在大部分机器都有支持：
 
-	```Java
-	MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Planar
-	MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420SemiPlanar
-	```
+		
+		MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Planar
+		MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420SemiPlanar
+		
 
 	两种格式分别是YUV420P和NV21，如果机器上只支持YUV420P格式的情况下，则需要先将摄像头输出的NV21格式先转换成YUV420P，才能送入编码器进行编码，否则最终出来的视频就会花屏，或者颜色出现错乱
 
@@ -92,35 +92,31 @@ MediaCodec是API 16之后Google推出的用于音视频编解码的一套偏底�
 
 	如果使用MediaCodec来编码H264视频流，对于H264格式来说，会有一些针对压缩率以及码率相关的视频质量设置，典型的诸如Profile(baseline, main, high)，Profile Level, Bitrate mode(CBR, CQ, VBR)，合理配置这些参数可以让我们在同等的码率下，获得更高的压缩率，从而提升视频的质量，Android也提供了对应的API进行设置，可以设置到MediaFormat中这些设置项:
 	
-	```Java
-	MediaFormat.KEY_BITRATE_MODE
-	MediaFormat.KEY_PROFILE
-	MediaFormat.KEY_LEVEL
-	```
+		
+		MediaFormat.KEY_BITRATE_MODE
+		MediaFormat.KEY_PROFILE
+		MediaFormat.KEY_LEVEL
+		
 	
 	但问题是，对于Profile，Level, Bitrate mode这些设置，在大部分手机上都是不支持的，即使是设置了最终也不会生效，例如设置了Profile为high，最后出来的视频依然还会是Baseline，Shit....
 	
 	这个问题，在7.0以下的机器几乎是必现的，其中一个可能的原因是，Android在源码层级[hardcode](http://androidxref.com/6.0.1_r10/xref/frameworks/av/media/libstagefright/ACodec.cpp)了profile的的设置：
 	
-	```Java
-	// XXX
-    if (h264type.eProfile != OMX_VIDEO_AVCProfileBaseline) {
-        ALOGW("Use baseline profile instead of %d for AVC recording",
-            h264type.eProfile);
-        h264type.eProfile = OMX_VIDEO_AVCProfileBaseline;
-    }
-	```
+		// XXX
+    	if (h264type.eProfile != OMX_VIDEO_AVCProfileBaseline) {
+        	ALOGW("Use baseline profile instead of %d for AVC recording",
+            		h264type.eProfile);
+        	h264type.eProfile = OMX_VIDEO_AVCProfileBaseline;
+    	}
 	
 	Android直到[7.0](http://androidxref.com/7.0.0_r1/xref/frameworks/av/media/libstagefright/ACodec.cpp)之后才取消了这段地方的Hardcode
 	
-	```Java
-	if (h264type.eProfile == OMX_VIDEO_AVCProfileBaseline) {
-        ....
-    } else if (h264type.eProfile == OMX_VIDEO_AVCProfileMain ||
-            h264type.eProfile == OMX_VIDEO_AVCProfileHigh) {
-        .....
-    }
-	```
+		if (h264type.eProfile == OMX_VIDEO_AVCProfileBaseline) {
+        	....
+    	} else if (h264type.eProfile == OMX_VIDEO_AVCProfileMain ||
+            		h264type.eProfile == OMX_VIDEO_AVCProfileHigh) {
+        	.....
+    	}
 	
 	这个问题可以说间接导致了MediaCodec编码出来的视频质量偏低，同等码率下，难以获得跟软编码甚至iOS那样的视频质量。	
 	

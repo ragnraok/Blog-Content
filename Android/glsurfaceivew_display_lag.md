@@ -12,13 +12,13 @@ Slug: surface_display_lag
 
 一般来说，Android会把所有可见的View渲染到一个由SurfaceFlinger创建的Surface上，但是这个Surface并不能由开发者直接操作，从App的开发角度来看，大部分情况下我们直接操作的Surface一般会从以下两个地方获取
 
-1. [SurfaceView](https://developer.android.com/reference/android/view/SurfaceView) / [GLSurfaceView](https://kapeli.com/dash_share?docset_file=Android&docset_name=Android&path=developer.android.com/reference/android/opengl/GLSurfaceView.html&platform=android&repo=Main&source=https://developer.android.com/reference/android/opengl/GLSurfaceView.html&version=8.1.0)
+- [SurfaceView](https://developer.android.com/reference/android/view/SurfaceView) / [GLSurfaceView](https://kapeli.com/dash_share?docset_file=Android&docset_name=Android&path=developer.android.com/reference/android/opengl/GLSurfaceView.html&platform=android&repo=Main&source=https://developer.android.com/reference/android/opengl/GLSurfaceView.html&version=8.1.0)
 
-   这两个组件是结合了Surface跟View的实现，特别的是，这两个view系统为其单独提供一层了Surface，并直接由SurfaceFlinger进行管理合成，因此实际显示在屏幕上的时候，并没有完全从属在当前的View的布局层次上，在布局对应的位置上，只是一个透明的占位符。而GLSurfaceView，则在SurfaceView的基础上提供了EGL的上下文，以便可以直接使用GLES在Surface上绘制内容
+    这两个组件是结合了Surface跟View的实现，特别的是，这两个view系统为其单独提供一层了Surface，并直接由SurfaceFlinger进行管理合成，因此实际显示在屏幕上的时候，并没有完全从属在当前的View的布局层次上，在布局对应的位置上，只是一个透明的占位符。而GLSurfaceView，则在SurfaceView的基础上提供了EGL的上下文，以便可以直接使用GLES在Surface上绘制内容
 
-2. [SurfaceTexture](https://developer.android.com/reference/android/graphics/SurfaceTexture) / [TextureView](https://developer.android.com/reference/android/view/TextureView)
+- [SurfaceTexture](https://developer.android.com/reference/android/graphics/SurfaceTexture) / [TextureView](https://developer.android.com/reference/android/view/TextureView)
 
-   SurfaceTexture是从Android 3.0+开始提供的组件，提供了一个Surface跟GLES纹理的组合，而TextureView，则是一个SurfaceTexture跟View结合起来的组件。而TextureView跟SurfaceView最大的不同在于，虽然都是可以作为BufferQueue的生产方，但是最后合成的时候，并非由SurfaceFlinger直接合成，而是通过GLES直接合成到App对应的Surface上，在布局层次上是跟当前App的View是在同一个层级，对应的View的刷新逻辑也会影响TextureView。因此，从原理上来说，SurfaceView/GLSurfaceView的渲染效率要比TextureView要高
+     SurfaceTexture是从Android 3.0+开始提供的组件，提供了一个Surface跟GLES纹理的组合，而TextureView，则是一个SurfaceTexture跟View结合起来的组件。而TextureView跟SurfaceView最大的不同在于，虽然都是可以作为BufferQueue的生产方，但是最后合成的时候，并非由SurfaceFlinger直接合成，而是通过GLES直接合成到App对应的Surface上，在布局层次上是跟当前App的View是在同一个层级，对应的View的刷新逻辑也会影响TextureView。因此，从原理上来说，SurfaceView/GLSurfaceView的渲染效率要比TextureView要高
 
 ### 使用GLES在Surface中显示内容
 
@@ -103,19 +103,19 @@ MediaCodec.getInputSurface
 
 而在实现上，Android提供了一个单独的EGL扩展：[eglPresentationTimeANDROID](https://www.khronos.org/registry/EGL/extensions/ANDROID/EGL_ANDROID_presentation_time.txt) ，在swapBuffer之前调用，提交当前帧的想要的显示时间戳，至于时间戳的具体含义，在不同的场景中可能会有不同的表达，例如：
 
-1. 如果是显示到屏幕上的时候，时间戳就是一个绝对时间值，例如系统的启动时间
+- 如果是显示到屏幕上的时候，时间戳就是一个绝对时间值，例如系统的启动时间
 
-2. 如果是视频编码的场景，例如使用MediaCodec的InputSurface来编码视频的时候，这个时候时间戳的含义就是当前视频帧的 [pts](https://en.wikipedia.org/wiki/Presentation_timestamp)，事实上，当你想在MediaCodec的InputSurface上渲染完内容之后，如果不调用这个函数控制当前这一帧的pts，除非合成器有额外控制，否则最后编码出来的视频fps将会相当大，具体这里的实现，可以参考下BigFlake这里的[代码](https://bigflake.com/mediacodec/EncodeAndMuxTest.java.txt)
+- 如果是视频编码的场景，例如使用MediaCodec的InputSurface来编码视频的时候，这个时候时间戳的含义就是当前视频帧的 [pts](https://en.wikipedia.org/wiki/Presentation_timestamp)，事实上，当你想在MediaCodec的InputSurface上渲染完内容之后，如果不调用这个函数控制当前这一帧的pts，除非合成器有额外控制，否则最后编码出来的视频fps将会相当大，具体这里的实现，可以参考下BigFlake这里的[代码](https://bigflake.com/mediacodec/EncodeAndMuxTest.java.txt)
 
 *btw, 这个扩展对应的Android上层接口定义在[这里](https://developer.android.com/reference/android/opengl/EGLExt.html)*
 
 因此，通过对 ``eglPresentationTimeANDROID`` 的调用，结合BufferQueue，SurfaceFlinger就可以针对上屏的每一帧数据延迟做精确的控制了，假设说，我们设置了某一帧显示时间戳为**T**，然后提交到BufferQueue中：
 
-1. 当在**T-1**的时间点，当前队首为这一帧的时候，SurfaceFlinger会继续hold住当前帧，也就是说这个时候显示的还是前一帧的数据
+- 当在**T-1**的时间点，当前队首为这一帧的时候，SurfaceFlinger会继续hold住当前帧，也就是说这个时候显示的还是前一帧的数据
 
-2. 当达到了**T**时间点，当前队首为这一帧的时候，SurfaceFlinger便直接提交这一帧到Display
+- 当达到了**T**时间点，当前队首为这一帧的时候，SurfaceFlinger便直接提交这一帧到Display
 
-3. 当达到了**T+1**时间点，当前队首为这一帧的时候，因为已经超过了这一帧设置的时间戳**T**，因此SurfaceFlinger便直接**丢弃**这一帧，继续处理队列剩余的帧数据
+- 当达到了**T+1**时间点，当前队首为这一帧的时候，因为已经超过了这一帧设置的时间戳**T**，因此SurfaceFlinger便直接**丢弃**这一帧，继续处理队列剩余的帧数据
 
 总体来看，在通过帧时间戳控制之后，Android就可以解决Surface的渲染上屏延迟问题，但渲染过长的时候，就势必带来丢帧，因此根本的解决方案，还是得尽量在16ms内，渲染完一帧数据
 

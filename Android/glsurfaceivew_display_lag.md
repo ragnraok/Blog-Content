@@ -67,7 +67,7 @@ checkEglError("eglMakeCurrent")
 
 以上代码摘自[这里](https://bigflake.com/mediacodec/CameraToMpegTest.java.txt)，并转换成了kotlin
 
-大概流程就是先选择好需要的EGL配置，然后初始化EGLConfig跟EGLContext，最终，调用``eglCreatexxxSurface``创建一个EGLSurface，这这个例子中调用的是``eglCreateWindowSurface``，并在函数中传入了SurfaceView/TextureView中的Surface对象
+大概流程就是先选择好需要的EGL配置，然后初始化EGLConfig跟EGLContext，最终，调用``eglCreatexxxSurface``创建一个EGLSurface，这这个例子中调用的是``eglCreateWindowSurface``，并在函数中传入了SurfaceView/TextureView中的Surface对象````
 
 另外，在`eglCreateWindowSurface`函数中传入的Surface对象，如果不是需要渲染到屏幕上的话，除了直接使用上面的两个Surface对象以外，在很多处理视频特效的应用中，另外一种方式是传入MediaCodec的Surface，也就是这个方法的返回结果
 
@@ -133,4 +133,4 @@ MediaCodec.getInputSurface
 
 - [Android图形架构](https://source.android.com/devices/graphics/)
 
-- [Android MediaCodec Stuff](https://bigflake.com/mediacodec/)
+- [Android MediaCodec Stuff](https://bigflake.com/mediacodec/)````

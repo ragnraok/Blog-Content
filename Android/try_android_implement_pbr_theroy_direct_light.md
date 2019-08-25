@@ -204,6 +204,15 @@ F0 = mix(F0, albedo, metallic);
 
 ![](static/images/brdf_f_eq.png)
 
+在glsl中的实现则为：
+
+```glsl
+vec3 fresnelSchlick(float cosTheta, vec3 F0)
+{
+  return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+}
+```
+其中cosTheta则为HdotV
 
 终于，我们计算出了BRDF公式中的所有近似项，并且，我们有了两项粗糙度（Roughness）以及金属度（Metallic）两项额外的参数可以用于调整渲染效果，这两个参数的取值范围均为[0, 1]
 

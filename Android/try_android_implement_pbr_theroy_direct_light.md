@@ -12,19 +12,21 @@ Slug: try_android_implement_pbr_thery_direct_light
 
 首先我们来看看，在PBR出现之前，传统的Blinn-Phong光照是怎么做的，我们先来看看渲染方程：
 
-![](static/images/Blinn_Phong.png)
+<!-- ![](static/images/Blinn_Phong.png) -->
+
+$$L=Diffuse\ast N\cdot L+Specular+(N\cdot L)^{shiness}$$
 
 我们可以看到，光照颜色的输出，主要有两部分构成，**漫反射**项以及**高光项**，在渲染方程中：
 
-- Diffuse是漫反射颜色
+- $Diffuse$是漫反射颜色
 
-- Specular是高光颜色，或者叫做镜面反射的颜色
+- $Specular$是高光颜色，或者叫做镜面反射的颜色
 
-- ![](static/images/NdotL.png) 是表面法向量跟光线方向向量的点乘
+- $N\cdot L$ 是表面法向量跟光线方向向量的点乘
 
-- ![](static/images/NdotH.png) 是表面法向量跟半程向量（光线方向向量跟视角向量的中间向量）的点乘
+- $N\cdot H$ 是表面法向量跟半程向量（光线方向向量跟视角向量的中间向量）的点乘
 
-- shiness是高光度的反光度参数，值越大，高光点越集中
+- $shiness$是高光度的反光度参数，值越大，高光点越集中
 
 这个是经典的Blinn-Phong光照模型的，除了这个基本公式以外，后续也有针对这个模型一些改进项，使其更加符合物理上的直觉效果
 
@@ -56,13 +58,13 @@ Slug: try_android_implement_pbr_thery_direct_light
 
   在PBR中，能量守恒定律认为，出射的光线能量，永远不能超过入射光线的能量。在微平面模型中，对于一束光进入到进入到物体表面之后，我们分成了几个部分：
 
-  - 折射部分，指的是被吸收到物体表面的那部分光线能量，具体表现出来就是物体的漫反射（Diffuse）
+- 折射部分，指的是被吸收到物体表面的那部分光线能量，具体表现出来就是物体的漫反射（Diffuse）
 
-  - 反射部分，指的是光线反射出来离开物体表面的那部分光照，具体指的就是镜面高光（Specular）
+- 反射部分，指的是光线反射出来离开物体表面的那部分光照，具体指的就是镜面高光（Specular）
 
-    对于非金属物质来说，光线射进物体都会产生折射跟反射部分，而对于金属物质来说，微平面理论认为金属表面不会显示出漫反射部分，所有光线都会被处理成镜面高光
+  对于非金属物质来说，光线射进物体都会产生折射跟反射部分，而对于金属物质来说，微平面理论认为金属表面不会显示出漫反射部分，所有光线都会被处理成镜面高光
 
-    而能量守恒的要求，则是要求漫反射+高光部分占比加起来为1，实际实现中，我们往往先算出高光部分占比，然后在算出漫反射部分占比：
+  而能量守恒的要求，则是要求漫反射+高光部分占比加起来为1，实际实现中，我们往往先算出高光部分占比，然后在算出漫反射部分占比：
 
 ```glsl
   float kS = calculateSpecularComponent(); // 反射/镜面 部分
@@ -77,25 +79,25 @@ BRDF（Bidirectional Reflectance Distribution Function），即为双向反射�
 
 类似Blinn-Phong模型，PBR的BRDF也是接受入射光方向Wi，反射光方向Wo，以及一个跟微平面理论相关的物理参数粗糙度（Roughness），实际实现中，最为常用的则是被称为Cook-Torrance的BRDF模型，同时兼具漫反射以及镜面反射两部分：
 
-![](static/images/brdf.png)
+$$L=K_{d}\int_{lambert} + K_{s}\int_{cook-torrance}$$
 
-  - 其中Kd表示漫反射光照的能量占比，Ks则表示镜面反射的能量占比，两项加起来为1，而对于漫反射中的Lambert项，我们经常用这个公式计算：
+- 其中Kd表示漫反射光照的能量占比，Ks则表示镜面反射的能量占比，两项加起来为1，而对于漫反射中的Lambert项，我们经常用这个公式计算：
 
-    ![](static/images/brdf_diffuse.png)
+  $$\int_{lambert}=\frac{diffuse}{\pi}$$
 
-    我们将漫反射颜色除以PI，作为BRDF公式的漫反射部分。这部分并没有什么特别的，实际上在Blinn-Phong模型的改进版本中，也有将漫反射颜色除以PI的做法，用于得到更加真实的效果
+  我们将漫反射颜色除以PI，作为BRDF公式的漫反射部分。这部分并没有什么特别的，实际上在Blinn-Phong模型的改进版本中，也有将漫反射颜色除以PI的做法，用于得到更加真实的效果
 
-  - 而BRDF公式的镜面高光部分则比较复杂：
+- 而BRDF公式的镜面高光部分则比较复杂：
 
-    ![](static/images/brdf_specular.png)
+  $$\int_{cook-torrance}=\frac{DFG}{4(W_{o}\cdot n)(W_{i}\cdot n)}$$
 
-    这里包含了三个主要的参数，D/F/G分别代表三种不同种类的函数，分别用来模拟反射的不同部分的特性，分母则为一个配平参数用来作为标准化因子。D/F/G三个函数则分别为：
+  这里包含了三个主要的参数，D/F/G分别代表三种不同种类的函数，分别用来模拟反射的不同部分的特性，分母则为一个配平参数用来作为标准化因子。D/F/G三个函数则分别为：
 
-      - 法线分布函数（Normal Distribution Function）：用于估算在收到表面粗糙度的影响下，取向方向与半程向量一致的微平面向量
-      - 几何函数（Geometry Function）：用于描述微平面自成阴影的的函数，在表面粗糙度比较大的时候，平面上的微表面可能挡住了其他微表面的光线
-      - 菲涅尔方程（Fresnel Rquation）：用于描述光线在不同的入射角度下表面反射光线所占的比率
+  - 法线分布函数（Normal Distribution Function）：用于估算在收到表面粗糙度的影响下，取向方向与半程向量一致的微平面向量
+  - 几何函数（Geometry Function）：用于描述微平面自成阴影的的函数，在表面粗糙度比较大的时候，平面上的微表面可能挡住了其他微表面的光线
+  - 菲涅尔方程（Fresnel Rquation）：用于描述光线在不同的入射角度下表面反射光线所占的比率
 
-    以上每一种函数都描述了对应不同的物理现象，而实际渲染中，我们都会采用某种近似的函数，接下来我们来说下这几种近似函数的公式：
+  以上每一种函数都描述了对应不同的物理现象，而实际渲染中，我们都会采用某种近似的函数，接下来我们来说下这几种近似函数的公式：
 
 ---
 
@@ -113,7 +115,7 @@ BRDF（Bidirectional Reflectance Distribution Function），即为双向反射�
 
 实际渲染中，我们所使用的NDF方程为Trowbridge-Reitz GGX分布：
 
-  ![](static/images/brdf_ndf.png)
+  $$NDF(n,h,a)=\frac{a^{2}}{\pi((n\cdot h)^{2}(a^{2}-1)+1)^{2}}$$
 
 这里参数a取为粗糙度的平方
 
@@ -145,17 +147,17 @@ float DistributionGGX(vec3 N, vec3 H, float roughness)
 
 这里我们使用的几何函数为Schlick-GGX近似：
 
-![](static/images/brdf_g.png)
+$$G(n,v,k)=\frac{n\cdot v}{(n\cdot v)(1-k)+k)}$$
 
 其中参数k在计算直接光的时候为：
 
-![](static/images/brdf_g_k_direct.png)
+$$k=\frac{(a+1)^{2}}{8}$$
 
 这里参数a同样也是取为粗糙度的平方
 
 而在实际渲染中，我们还将需要光线的方向向量来将两者纳入其中：
 
-![](static/images/brdf_g_smith.png)
+$$G_{smith}=G(n,v,k)G(n,l,k)$$
 
 通过以上公式，在不同的粗糙度下可以得到如下的效果：
 
@@ -187,6 +189,7 @@ float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness)
 ```
 
 <br/>
+
 #### 菲涅尔方程（Fresnel Rquation）的近似
 
 菲涅尔方程描述了光线被反射部分的比率，因而会受到观察方向的影响，结合能量守恒，我们可以得出剩下的漫反射的比率。而要计算出菲涅尔方程，我们需要一个基础反射率（F0）的参数，描述的是在表面的掠射角方向望过去（此时表面法线跟视线方向成90度），不同材料的表面反射率都不太一样：
@@ -202,7 +205,7 @@ F0 = mix(F0, albedo, metallic);
 
 有了F0之后，我们使用Fresnel-Schlick近似来计算菲涅尔方程的近似：
 
-![](static/images/brdf_f_eq.png)
+$$F(h,v,F_{0})=F_{0}+(1-F_{0})(1-h\cdot v)^{5}$$
 
 在glsl中的实现则为：
 
@@ -212,11 +215,13 @@ vec3 fresnelSchlick(float cosTheta, vec3 F0)
   return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
 }
 ```
+
 其中cosTheta则为HdotV
 
 终于，我们计算出了BRDF公式中的所有近似项，并且，我们有了两项粗糙度（Roughness）以及金属度（Metallic）两项额外的参数可以用于调整渲染效果，这两个参数的取值范围均为[0, 1]
 
 ---
+
 ## 直接光照明
 
 接下来，在得到了BRDF的真实公式之后，我们尝试基于公式直接计算直接光的照明，我们会在场景中添加若干个点光源，以及一个方向光源，首先我们定义光源的一些基本变量：
@@ -313,7 +318,6 @@ color = pow(color, vec3(1.0/2.2));
 
 ![](static/images/android_pbr_direct_light_render_roughness.jpg)
 
-
 本文章具体实现代码在：[AndroidPBR](https://github.com/ragnraok/AndroidPBR)，渲染的界面提供了两个slidebar用于调整金属度以及粗糙度参数
 
 PBR管线除了直接光照明部分以外，还有环境光照明部分，这部分是PBR对比与上一世代光照模型的一个很重要的区别，所谓全局光照的实体，我将会在下一篇文章尝试介绍这一部分的内容
@@ -323,4 +327,3 @@ PBR管线除了直接光照明部分以外，还有环境光照明部分，这�
 - PBR理论介绍: [https://learnopengl-cn.github.io/07%20PBR/01%20Theory/](https://learnopengl-cn.github.io/07%20PBR/01%20Theory/)
 - PBR直接光照明实现: [https://learnopengl-cn.github.io/07%20PBR/02%20Lighting/](https://learnopengl-cn.github.io/07%20PBR/02%20Lighting/)
 - PBR白皮书: [https://zhuanlan.zhihu.com/p/53086060](https://zhuanlan.zhihu.com/p/53086060)
-

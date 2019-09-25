@@ -79,17 +79,17 @@ BRDF（Bidirectional Reflectance Distribution Function），即为双向反射�
 
 类似Blinn-Phong模型，PBR的BRDF也是接受入射光方向Wi，反射光方向Wo，以及一个跟微平面理论相关的物理参数粗糙度（Roughness），实际实现中，最为常用的则是被称为Cook-Torrance的BRDF模型，同时兼具漫反射以及镜面反射两部分：
 
-$$L=K_{d}\int_{lambert} + K_{s}\int_{cook-torrance}$$
+$$L=K_{d}f_{lambert} + K_{s}f_{cook-torrance}$$
 
 - 其中Kd表示漫反射光照的能量占比，Ks则表示镜面反射的能量占比，两项加起来为1，而对于漫反射中的Lambert项，我们经常用这个公式计算：
 
-  $$\int_{lambert}=\frac{diffuse}{\pi}$$
+  $$f_{lambert}=\frac{diffuse}{\pi}$$
 
   我们将漫反射颜色除以PI，作为BRDF公式的漫反射部分。这部分并没有什么特别的，实际上在Blinn-Phong模型的改进版本中，也有将漫反射颜色除以PI的做法，用于得到更加真实的效果
 
 - 而BRDF公式的镜面高光部分则比较复杂：
 
-  $$\int_{cook-torrance}=\frac{DFG}{4(W_{o}\cdot n)(W_{i}\cdot n)}$$
+  $$f_{cook-torrance}=\frac{DFG}{4(W_{o}\cdot n)(W_{i}\cdot n)}$$
 
   这里包含了三个主要的参数，D/F/G分别代表三种不同种类的函数，分别用来模拟反射的不同部分的特性，分母则为一个配平参数用来作为标准化因子。D/F/G三个函数则分别为：
 

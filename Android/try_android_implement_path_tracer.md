@@ -38,9 +38,6 @@ $$\int_{a}^{b}f(x)=F_{N}=\frac{1}{N}\sum_{N}^{i=1}\frac{f(x_{i})}{pdf(x_{i})}$$
 
 其中$pdf(x_{i})$为概率密度函数，从公式上可以看出，当我们渲染的次数越多的时候，就越符合最终计算的结果。
 
-~~至于pdf的选取，选择的方式有很多，对于本片文章的实现来说，我们直接选取最简单的一种:~~
-~~  $$pdf=\frac{1}{\sum_{i}f(x_{i})}$$~~
-
 ## Android中光线追踪的实现
 
 这篇文章的标题说的是实现“实时”的光线追踪，但事实上，对于现有的手机GPU管线来说，是不可能做到类似DXR那样的实时效果的，因此这里的“实时”光线追踪，实际上也只是渐进式渲染，通过多次渲染结果的叠加，我们实际上对于每个像素进行了多次采样，采样次数累加的越多，渲染结果越清晰（图源自pbrt）：
@@ -270,7 +267,9 @@ vec3 brdfLightColor(vec3 N, vec3 L, vec3 V, vec3 lightColor, Material material) 
 
 $$L(p, w_{o})=\int_{\Omega }(K_{d}f_{lambert})L_{i}(w_{i}\cdot n)dw_{i} + \int_{\Omega }(K_{s}f_{cook-torrance})L_{i}(w_{i}\cdot n)dw_{i}$$
 
-漫反射部分为：
+左右两边分别是漫反射跟高光部分的颜色的半球空间积分
+
+漫反射部分的为：
 
 $$L(p, w_{o})=\int_{\Omega }(K_{d}\frac{diffuse}{\pi})L_{i}(w_{i}\cdot n)dw_{i}$$
 
@@ -315,7 +314,7 @@ float brdfMaterialPdf(vec3 N, vec3 L, vec3 V, Material material, bool diffuse) {
 }
 ```
 
-而材质本身的颜色我们也需要进行计算：
+另外，我们也要计算漫反射跟高光部分的颜色：
 
 ```glsl
 vec3 brdfMaterialColor(vec3 N, vec3 L, vec3 V, Material material, bool diffuse) {
@@ -348,6 +347,7 @@ vec3 brdfMaterialColor(vec3 N, vec3 L, vec3 V, Material material, bool diffuse) 
         float G = GeometrySmith(N, V, L, roughness);
         float Vis = (G * VdotH) / (NdotH * NdotV);
 
+        vec3 specularColor =  Vis * F;
         specularColor *= NdotL;
 
         color = specularColor;

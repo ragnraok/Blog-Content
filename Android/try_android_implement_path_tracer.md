@@ -189,6 +189,9 @@ for (int pass = 0; pass < $bounces; pass++) {
 vec3 color = max(radiance,vec3(0.0));
 ```
 
+其中多次反射颜色叠加的计算参考pbrt中对Light Transport Equation的推导：
+[http://www.pbr-book.org/3ed-2018/Light_Transport_I_Surface_Reflection/The_Light_Transport_Equation.html#eq:throughput-definition](http://www.pbr-book.org/3ed-2018/Light_Transport_I_Surface_Reflection/The_Light_Transport_Equation.html#eq:throughput-definition)
+
 整个迭代循环大概如此，注意到当我们跟场景中物体没有交点的时候，才去判断是否到达了光源，另外，最后我们还计算了环境光反射
 
 ### 渲染结果叠加
@@ -407,6 +410,7 @@ vec3 brdfRayDir(vec3 N, vec3 V, Material material, int bias, out bool isDiffuseR
 ### References
 
 - [http://www.pbr-book.org/3ed-2018/Light_Transport_I_Surface_Reflection/Path_Tracing.html](http://www.pbr-book.org/3ed-2018/Light_Transport_I_Surface_Reflection/Path_Tracing.html)
+- [http://www.pbr-book.org/3ed-2018/Light_Transport_I_Surface_Reflection/The_Light_Transport_Equation.html#eq:throughput-definition](http://www.pbr-book.org/3ed-2018/Light_Transport_I_Surface_Reflection/The_Light_Transport_Equation.html#eq:throughput-definition)
 - [http://www.pbr-book.org/3ed-2018/Monte_Carlo_Integration/Importance_Sampling.html](http://www.pbr-book.org/3ed-2018/Monte_Carlo_Integration/Importance_Sampling.html)
 - [http://www.pbr-book.org/3ed-2018/Light_Transport_I_Surface_Reflection/Sampling_Light_Sources.html](http://www.pbr-book.org/3ed-2018/Light_Transport_I_Surface_Reflection/Sampling_Light_Sources.html)
 - [http://iquilezles.org/www/articles/intersectors/intersectors.htm](http://iquilezles.org/www/articles/intersectors/intersectors.htm)
